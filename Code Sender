@@ -1,0 +1,106 @@
+#include <ArduinoJson.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <LoRa.h>
+#define SCK 5 // GPIO5 -- SX127x's SCK
+#define MISO 19 // GPIO19 -- SX127x's MISO
+#define MOSI 27 // GPIO27 -- SX127x's MOSI
+#define SS 18 // GPIO18 -- SX127x's CS
+#define RST 14 // GPIO14 -- SX127x's RESET
+#define DI0 26 // GPIO26 -- SX127x's IRQ(Interrupt Request)
+ 
+const char* ssid = "Raspi-web";
+const char* password =  "azertyui";
+const char* mqttServer = "test.mosquitto.org";
+const int mqttPort = 1883;
+const char* mqttUser = "";
+const char* mqttPassword = "";
+ 
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+
+union pack
+{
+uint8_t frame[16]; // trames avec octets
+float data[4]; // 4 valeurs en virgule flottante
+} sdp ; // paquet d’émission
+
+
+void lora() {
+  if (!LoRa.begin(870000000)) {
+  Serial.println("Starting LoRa failed!");
+  while (1);
+  }
+  Serial.println("Starting LoRa good!");
+  LoRa.setSpreadingFactor(12);
+  LoRa.setSignalBandwidth(125000);
+  Serial.println("lora initialized!");
+  }
+
+
+void setup() {
+ 
+  Serial.begin(115200);
+  pinMode(DI0, INPUT); // signal interrupt
+  SPI.begin(SCK,MISO,MOSI,SS);
+  LoRa.setPins(SS,RST,DI0);
+
+
+  Serial.println();
+ 
+  WiFi.begin(ssid, password);
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(2000);
+    Serial.println("Connecting to WiFi..");
+  }
+ 
+  Serial.println("Connected to the WiFi network");
+ 
+  client.setServer(mqttServer, mqttPort);
+ 
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+ 
+    if (client.connect("ESP32ClientErwannounet", mqttUser, mqttPassword )) {
+ 
+      Serial.println("connected");
+ 
+    } else {
+ 
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+ 
+    }
+  }
+  lora();
+}
+
+
+
+
+void loop() {
+ 
+
+
+  Serial.println("Sending message to MQTT topic..");
+  client.publish("srt5/GEFY", "870000000;12;125000");
+ 
+  client.loop();
+  Serial.println("-------------");
+  Serial.println("New Packet");
+  float d1=12.0, d2=321.54;
+  LoRa.beginPacket(); // start packet
+  sdp.data[0]=d1;
+  sdp.data[1]=d2;
+  LoRa.write(sdp.frame,16);
+  LoRa.endPacket();
+  d1++; d2+=2;
+
+
+ 
+  delay(5000);
+ 
+}
