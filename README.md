@@ -1,4 +1,4 @@
-# Tp_IoT_2022_LoRa_Bluetooth
+# Tp_IoT_2022_LoRa_Bluetooth - Gabin Le Breton / Erwan Drean
 
 ## 1. Receiver :
 ### Rôle et fonctionnement
@@ -22,6 +22,23 @@ Lorsqu'un message arrive sur le topic MQTT auquel le receiver est abonné, la fo
 Dans la boucle principale loop(), le receiver écoute les paquets LoRa en utilisant LoRa.parsePacket(). Si un paquet est détecté, les données sont lues et traitées. Le contenu est interprété comme des valeurs à virgule flottante représentant les données envoyées par l'émetteur, et la force du signal (RSSI) est également récupérée pour évaluer la qualité de la réception.
 
 ## 2. Sender :
+### Rôle et fonctionnement
+Initialement, le sender établit une connexion au réseau WiFi et se connecte au broker MQTT en utilisant les identifiants fournis. Une fois cette connexion établie, il procède à l'envoi des informations de configuration LoRa, notamment la fréquence à 870MHz, le facteur d'étalement (Sf) à 12 et la largeur de bande (Sb) à 125KHz, à travers un message MQTT. Cette étape est cruciale car elle permet de s'assurer que le receiver sera configuré pour écouter sur les mêmes paramètres LoRa, garantissant ainsi une communication synchronisée entre les deux dispositifs.
 
-Nous avons configuré le sender, celui-ci envoie les informations de connexion LoRa (Fréquence 870MHz, Sf= 12 et Sb= 125KHz) en MQTT, ensuite il envoie de la donnée en LoRa.
+Suite à la transmission des paramètres de configuration via MQTT, le sender passe à l'étape suivante de son processus, qui consiste à envoyer des données en utilisant la technologie LoRa. Pour ce faire, il initialise le module LoRa avec les paramètres spécifiés, puis crée un paquet de données, ici illustré par des valeurs à virgule flottante, qui sont converties en un format d'octets grâce à l'utilisation d'une union. Ces données sont ensuite transmises à travers le réseau LoRa. 
 
+### Explication du code:
+#### Connexion WiFi :
+Le sender commence par établir une connexion WiFi en utilisant les identifiants ssid et password. Cette étape est fondamentale pour permettre au dispositif de communiquer avec le broker MQTT sur Internet.
+
+#### Configuration et Connexion MQTT :
+Une fois connecté au réseau WiFi, le sender configure le client MQTT en spécifiant le serveur MQTT (mqttServer), le port (mqttPort), et, si nécessaire, les identifiants utilisateur (mqttUser, mqttPassword). Il tente ensuite de se connecter au broker MQTT. En cas de succès, un message de confirmation est affiché dans la console série.
+
+#### Envoi des Paramètres LoRa via MQTT :
+Avant de transmettre des données réelles, le sender publie un message sur un topic MQTT spécifique. Ce message contient les paramètres de configuration LoRa (fréquence, facteur d'étalement, largeur de bande) qui seront utilisés par le receiver pour s'aligner sur la même configuration de communication.
+
+#### Initialisation et Configuration LoRa :
+Le module LoRa est initialisé avec LoRa.begin(870000000) pour opérer à la fréquence de 870 MHz. Le facteur d'étalement et la largeur de bande sont également configurés. Ces paramètres assurent que le sender et le receiver communiquent de manière cohérente sur le réseau LoRa.
+
+#### Transmission de Données LoRa :
+Le sender crée un paquet de données, ici composé de deux valeurs à virgule flottante. Ces valeurs sont stockées dans une union, permettant une manipulation aisée des données sous forme d'octets pour l'envoi via LoRa. Le paquet est ensuite envoyé, marquant la transmission effective des données à travers le réseau LoRa.
